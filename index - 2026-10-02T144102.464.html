@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Топ донатеров — Donatty</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+  :root{
+    --void:#06120c; --glass-top:rgba(10,32,21,.96); --glass-bottom:rgba(4,15,10,.94);
+    --hairline:rgba(255,255,255,.08); --hairline-2:rgba(255,255,255,.16);
+    --violet-rgb:34,197,94; --violet-soft:#b6ffd3; --ink:#f0fff6; --ink-dim:#7fb096;
+    --rank1:#6dffb2; --rank1-rgb:109,255,178;
+    --rank2:#9ad9b4; --rank2-rgb:154,217,180;
+    --rank3:#3fcf8e; --rank3-rgb:63,207,142;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:transparent;font-family:'Manrope',sans-serif;overflow:hidden}
+  #wrap{width:var(--w,452px);padding:22px 24px 24px;position:relative;isolation:isolate}
+  #title{display:flex;align-items:center;gap:8px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:26px;letter-spacing:-.5px}
+  #title svg{flex-shrink:0;filter:drop-shadow(0 0 6px rgba(var(--rank1-rgb),.55))}
+  .titletext{background:linear-gradient(100deg,#fff 10%,var(--violet-soft) 120%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 2px rgba(0,0,0,.95)) drop-shadow(0 0 8px rgba(0,0,0,.7))}
+  #statuschip{margin:11px 0 18px;display:inline-flex;align-items:center;gap:7px;background:hsla(var(--h,150),55%,4%,.88);border:1px solid var(--hairline-2);border-radius:100px;padding:5px 13px 5px 10px;backdrop-filter:blur(6px)}
+  #dot{width:7px;height:7px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 6px #ff4d4d;transition:all .3s;flex-shrink:0}
+  #dot.live{background:#4dffa0;box-shadow:0 0 6px #4dffa0,0 0 14px #4dffa0;animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  #status{font-size:11px;font-weight:700;letter-spacing:.3px;color:var(--ink);text-shadow:0 1px 2px rgba(0,0,0,.9)}
+
+  #list{display:flex;flex-direction:column;gap:11px}
+  .row{position:relative;display:flex;align-items:center;gap:11px;background:linear-gradient(155deg,var(--glass-top),var(--glass-bottom));border:1px solid var(--hairline);border-radius:15px;padding:11px 17px 11px 14px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);transition:transform .35s cubic-bezier(.22,1,.36,1)}
+  .row:hover{transform:translateX(3px)}
+  .row.rank1{border-color:rgba(var(--rank1-rgb),.6);padding:14px 17px 14px 14px;animation:glow 2.6s ease-in-out infinite}
+  .row.rank2{border-color:rgba(var(--rank2-rgb),.32)}
+  .row.rank3{border-color:rgba(var(--rank3-rgb),.34)}
+  @keyframes glow{
+    0%,100%{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 34px -4px rgba(var(--rank1-rgb),.7),0 0 70px -12px rgba(var(--rank1-rgb),.5)}
+    50%{box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 0 46px -2px rgba(var(--rank1-rgb),.95),0 0 95px -6px rgba(var(--rank1-rgb),.7)}
+  }
+  .row:not(:first-child)::before{content:"";position:absolute;top:-11px;height:11px;left:31px;width:2px;background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.06));z-index:2}
+  .row.rank1::after{content:"";position:absolute;top:0;left:-70%;width:35%;height:100%;background:linear-gradient(100deg,transparent,rgba(var(--rank1-rgb),.12),transparent);animation:sweep 4.5s ease-in-out infinite;pointer-events:none}
+  @keyframes sweep{0%{left:-70%}60%,100%{left:130%}}
+  .bar{position:absolute;inset:0;width:0;background:linear-gradient(90deg,rgba(var(--violet-rgb),.16),transparent);z-index:1;transition:width .6s cubic-bezier(.22,1,.36,1);pointer-events:none}
+  .rank1 .bar{background:linear-gradient(90deg,rgba(var(--rank1-rgb),.22),transparent)}
+  .rank2 .bar{background:linear-gradient(90deg,rgba(var(--rank2-rgb),.16),transparent)}
+  .rank3 .bar{background:linear-gradient(90deg,rgba(var(--rank3-rgb),.18),transparent)}
+
+  .node{position:relative;z-index:2;width:34px;height:34px;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;color:var(--ink);background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.08),rgba(255,255,255,.02));border:1.5px solid var(--hairline-2)}
+  .rank1 .node{border:2px solid var(--rank1);color:var(--rank1);box-shadow:0 0 4px rgba(var(--rank1-rgb),.9),0 0 18px rgba(var(--rank1-rgb),.6)}
+  .rank2 .node{border-color:var(--rank2);color:var(--rank2)}
+  .rank3 .node{border-color:var(--rank3);color:var(--rank3)}
+
+  .avatar-wrap{position:relative;width:42px;height:42px;flex-shrink:0;z-index:2}
+  .rank1 .avatar-wrap{width:48px;height:48px}
+  .rank1 .avatar-wrap::before,.rank1 .avatar-wrap::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:2px solid rgba(var(--rank1-rgb),.8);box-shadow:0 0 14px rgba(var(--rank1-rgb),.6),inset 0 0 10px rgba(var(--rank1-rgb),.35);opacity:0;animation:ripple 2.8s ease-out infinite;z-index:0}
+  .rank1 .avatar-wrap::after{animation-delay:1.4s}
+  @keyframes ripple{0%{transform:scale(.95);opacity:.9}100%{transform:scale(1.75);opacity:0}}
+  .coins{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+  .coins i{position:absolute;bottom:-14px;font-style:normal;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--rank1);text-shadow:0 0 8px rgba(var(--rank1-rgb),.9);opacity:0;animation:floatUp 3.6s ease-in infinite}
+  @keyframes floatUp{0%{transform:translateY(0) rotate(-12deg) scale(.7);opacity:0}18%{opacity:.85}70%{opacity:.55}100%{transform:translateY(-84px) rotate(14deg) scale(1.1);opacity:0}}
+  .avatar{position:relative;z-index:1;width:100%;height:100%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:18px;color:#fff;border:2px solid var(--void);box-shadow:0 0 0 3px rgba(255,255,255,.1)}
+  .rank1 .avatar{font-size:21px}
+  .rank2 .avatar{box-shadow:0 0 0 3px rgba(var(--rank2-rgb),.5)}
+  .rank3 .avatar{box-shadow:0 0 0 3px rgba(var(--rank3-rgb),.5)}
+  .crown{position:absolute;top:-15px;left:50%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 0 6px rgba(var(--rank1-rgb),1))}
+
+  .textbox{flex:1;z-index:2;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .info{min-width:0;flex:1}
+  .name{font-weight:800;font-size:15.5px;letter-spacing:-.1px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+  .rank1 .name{font-size:16.5px;text-shadow:0 0 10px rgba(var(--rank1-rgb),.65),0 1px 4px rgba(0,0,0,.9)}
+  .msglabel{font-size:10.5px;font-weight:600;color:var(--ink-dim);letter-spacing:.2px;margin-top:2px}
+  .count{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:18px;color:var(--violet-soft);text-shadow:0 0 8px rgba(var(--violet-rgb),.5);text-align:right;flex-shrink:0;white-space:nowrap}
+  .rank1 .count{color:var(--rank1);font-size:20px;text-shadow:0 0 12px rgba(var(--rank1-rgb),.85),0 0 26px rgba(var(--rank1-rgb),.5)}
+  .rank2 .count{color:var(--rank2)}
+  .rank3 .count{color:var(--rank3)}
+  .empty{color:var(--ink-dim);font-size:13px;font-weight:600;padding:12px 4px 4px}
+
+  #footer{display:flex;margin-top:15px;background:hsla(var(--h,150),50%,4%,.92);border:1px solid var(--hairline-2);border-radius:12px;overflow:hidden;backdrop-filter:blur(6px)}
+  .stat{position:relative;flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 11px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--ink)}
+  .stat + .stat::before{content:"";position:absolute;left:0;top:22%;bottom:22%;width:1px;background:var(--hairline-2)}
+  .stat b{color:var(--rank1);font-weight:800}
+  .statlabel{font-family:'Manrope',sans-serif;font-weight:700;color:var(--ink-dim)}
+  #setup{display:flex;flex-direction:column;gap:10px;background:linear-gradient(155deg,var(--glass-top),var(--glass-bottom));border:1px solid var(--hairline-2);border-radius:15px;padding:14px 16px}
+  #setup label{font-size:12px;font-weight:700;color:var(--ink-dim)}
+  #setup input{font:600 12px 'JetBrains Mono',monospace;color:var(--ink);background:hsla(var(--h,150),55%,4%,.7);border:1px solid var(--hairline-2);border-radius:10px;padding:9px 11px;outline:none}
+  #setup input:focus{border-color:var(--violet-soft)}
+  #setup button{font:800 13px 'Manrope',sans-serif;color:#fff;background:linear-gradient(100deg,rgba(var(--violet-rgb),1),var(--rank3));border:0;border-radius:10px;padding:9px;cursor:pointer}
+  #setup .err{font-size:11px;font-weight:700;color:#ff8a8a;min-height:14px}
+
+  .hide{display:none!important}
+  .noanim *,.noanim *::before,.noanim *::after{animation:none!important}.noanim .coins{display:none}
+  .noav .avatar-wrap{display:none}
+  #cfg{display:none}
+  html.cfgmode,html.cfgmode body{overflow:auto;background:#07110b;color:#f0fff6}
+  html.cfgmode #wrap{display:none}html.cfgmode #cfg{display:block}
+  #cfg{max-width:1080px;margin:0 auto;padding:28px 20px 60px;font-size:14px}
+  #cfg h1{font:800 28px 'Bricolage Grotesque',sans-serif;letter-spacing:-.5px}
+  #cfg .lead{color:#7fb096;margin:6px 0 24px;font-weight:600}
+  #cfg .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:22px;align-items:start}
+  @media(max-width:880px){#cfg .grid{grid-template-columns:1fr}}
+  #cfg fieldset{border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:6px 16px 16px;margin-bottom:14px;background:rgba(10,32,21,.55)}
+  #cfg legend{font:800 15px 'Bricolage Grotesque',sans-serif;padding:0 8px}
+  #cfg label.f{display:block;margin-top:12px;font-weight:700;font-size:12.5px;color:#9cc7b0}
+  #cfg input[type=text],#cfg input[type=number],#cfg select,#cfg textarea,#out{width:100%;margin-top:5px;font:600 13px 'JetBrains Mono',monospace;color:#f0fff6;background:rgba(3,16,10,.8);border:1px solid rgba(255,255,255,.16);border-radius:9px;padding:9px 11px;outline:none}
+  #cfg textarea{min-height:92px;resize:vertical}
+  #cfg input:focus,#cfg select:focus,#cfg textarea:focus,#cfg button:focus-visible{outline:2px solid #6dffb2;outline-offset:1px}
+  #cfg .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  #cfg .chk{display:flex;align-items:center;gap:9px;margin-top:10px;font-weight:600;cursor:pointer}
+  #cfg .chk input{accent-color:#22c55e;width:16px;height:16px}
+  #cfg input[type=range]{width:100%;margin-top:8px;accent-color:#22c55e}
+  #cfg input[type=color]{width:44px;height:34px;border:0;background:none;padding:0;cursor:pointer}
+  #cfg .sw{display:flex;gap:8px;align-items:center;margin-top:6px}
+  #cfg .sw button{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.25);cursor:pointer}
+  #cfg small,#cfg .hint{display:block;margin-top:6px;color:#7fb096;font-weight:600;font-size:12px;line-height:1.45}
+  #cfg .bad{color:#ff8a8a}#cfg .ok{color:#6dffb2}
+  #cfg .btn{font:800 13px 'Manrope',sans-serif;color:#04210f;background:#6dffb2;border:0;border-radius:10px;padding:10px 16px;cursor:pointer}
+  #cfg .btn.ghost{color:#f0fff6;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16)}
+  #cfg .sticky{position:sticky;top:16px}
+  #cfg .dr{display:grid;grid-template-columns:1fr 92px 74px 30px;gap:8px;margin-top:8px;align-items:center}
+  #cfg .dr input{margin-top:0}
+  #cfg .dh{margin-top:12px;font-weight:700;font-size:12px;color:#9cc7b0}
+  #cfg .dr button{height:30px;border:0;border-radius:8px;background:rgba(255,255,255,.08);color:#f0fff6;font-size:16px;cursor:pointer}
+  #pv{margin-top:14px;overflow:auto;border-radius:14px;border:1px solid rgba(255,255,255,.1);padding:18px;background:repeating-conic-gradient(#0d1a13 0 25%,#101f17 0 50%) 0 0/20px 20px}
+  #pv iframe{border:0;display:block;background:transparent;width:452px;height:420px;max-width:none}
+  @media (prefers-reduced-motion:reduce){#dot.live,.row.rank1,.row.rank1::after{animation:none!important}.rank1 .avatar-wrap::before,.rank1 .avatar-wrap::after,.coins i{animation:none!important;opacity:0}}
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <div id="title">
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 2.2c1 2.6 2.6 4.4 4.9 6.3 2.1 1.7 3.1 3.6 3.1 5.7 0 4.3-3.6 7.8-8 7.8s-8-3.5-8-7.8c0-2.5 1.3-4.5 2.9-6 .1 1.5.9 2.5 1.7 3-.3-2.9.8-5.8 3.4-9z" fill="url(#sg)"/><defs><linearGradient id="sg" x1="4.5" y1="2.2" x2="19.5" y2="22"><stop style="stop-color:#fff"/><stop offset="1" style="stop-color:var(--rank3)"/></linearGradient></defs></svg>
+    <span class="titletext">Топ донатеров</span>
+  </div>
+  <div id="statuschip"><span id="dot"></span><span id="status">подключение...</span></div>
+  <div id="list"><div class="empty">Ждём первый донат...</div></div>
+  <div id="footer">
+    <span class="stat" id="statCount"><b id="totalCount">0</b><span class="statlabel">донатов</span></span>
+    <span class="stat" id="statSum"><b id="totalSum">0</b><span class="statlabel" id="curLabel">₽</span></span>
+  </div>
+</div>
+
+
+<div id="cfg">
+  <h1>Топ донатеров для Donatty</h1>
+  <p class="lead">Настрой виджет, скопируй ссылку и добавь её в OBS как источник «Браузер».</p>
+  <div class="grid">
+    <div>
+      <fieldset><legend>Внешний вид</legend>
+        <label class="f">Заголовок<input type="text" data-k="title" maxlength="40"></label>
+        <div class="row2">
+          <label class="f">Мест в топе<input type="number" data-k="top" min="1" max="10"></label>
+          <label class="f">Валюта<input type="text" data-k="cur" maxlength="4" list="curs"></label>
+        </div>
+        <datalist id="curs"><option>₽</option><option>$</option><option>€</option><option>₴</option><option>₸</option><option>Br</option></datalist>
+        <label class="f">Ширина виджета: <span id="wv"></span> px<input type="range" data-k="width" min="300" max="700" step="4"></label>
+        <label class="f">Цвет</label>
+        <div class="sw"><input type="color" data-k="color" aria-label="Свой цвет">
+          <span id="swatches" style="display:flex;gap:8px"></span></div>
+      </fieldset>
+      <fieldset><legend>Что показывать</legend>
+        <label class="chk"><input type="checkbox" data-k="showTitle">Заголовок</label>
+        <label class="chk"><input type="checkbox" data-k="showStatus">Статус подключения</label>
+        <label class="chk"><input type="checkbox" data-k="showAvatars">Аватары с первой буквой ника</label>
+        <label class="chk"><input type="checkbox" data-k="showSum">Сумма донатера</label>
+        <label class="chk"><input type="checkbox" data-k="showCount">Количество донатов донатера</label>
+        <label class="chk"><input type="checkbox" data-k="showTotalSum">Общая сумма</label>
+        <label class="chk"><input type="checkbox" data-k="showTotalCount">Общее число донатов</label>
+        <label class="chk"><input type="checkbox" data-k="anim">Анимации (свечение, купюры)</label>
+      </fieldset>
+      <fieldset><legend>Период</legend>
+        <label class="f">Считать донаты<select data-k="period"><option value="all">за всё время</option><option value="day">за сутки</option><option value="week">за неделю</option><option value="month">за месяц</option></select></label>
+      </fieldset>
+      <fieldset><legend>Донатеры и суммы</legend>
+        <div class="dr dh"><span>Ник</span><span>Сумма</span><span>Донатов</span><span></span></div>
+        <div id="rows"></div>
+        <button class="btn ghost" id="addRow" type="button" style="margin-top:10px">Добавить донатера</button>
+        <input type="hidden" data-k="init">
+        <div class="row2">
+          <label class="f">Общая сумма<input type="number" data-k="ts" min="0" step="any" placeholder="авто"></label>
+          <label class="f">Всего донатов<input type="number" data-k="tc" min="0" placeholder="авто"></label>
+        </div>
+        <small>Это стартовые данные: новые донаты из Donatty добавляются сверху. «Авто» — сумма по строкам выше. После правки топ в OBS пересоберётся по новой ссылке.</small>
+      </fieldset>
+    </div>
+    <div class="sticky">
+      <fieldset><legend>Готовая ссылка</legend>
+        <input id="out" type="text" readonly placeholder="Ссылка появится здесь" aria-label="Готовая ссылка">
+        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" id="copy" type="button">Копировать ссылку</button>
+          <button class="btn ghost" id="resetTop" type="button">Сбросить сохранённый топ</button>
+        </div>
+        <small>Размер источника в OBS: <b id="size">—</b>. Ссылку вставь в OBS как «Браузер». При первом открытии виджет попросит ссылку оповещений Donatty (ПКМ по источнику → «Взаимодействовать»). После сброса топа вставь новую ссылку в OBS.</small>
+      </fieldset>
+      <div id="pv"><iframe id="frame" title="Предпросмотр"></iframe></div>
+      <small>Предпросмотр на тестовых данных.</small>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= НАСТРОЙКИ: задаются параметрами ссылки (см. страницу-конфигуратор) ================= */
+const qs = new URLSearchParams(location.search);
+const DEMO = qs.has('demo');
+const WIDGET_MODE = !!(qs.get('ref') && qs.get('token')) || DEMO || qs.has('widget');
+const gp = (k, d) => qs.has(k) ? qs.get(k) : d;
+const gf = (k, d = true) => qs.has(k) ? qs.get(k) !== '0' : d;
+const gn = (k, d) => { const v = parseFloat(qs.get(k)); return isFinite(v) ? v : d; };
+const WIDGET_URL = "", ALERTS_URL = "";
+const CURRENCY  = gp('cur', '₽');
+const PERIOD_MS = ({ day: 864e5, week: 6048e5, month: 2592e6 })[gp('period', 'all')] || 0;
+const TOP_N = Math.max(1, Math.min(10, Math.round(gn('top', 3))));
+const TITLE = gp('title', 'Топ донатеров');
+const SHOW = { title: gf('showTitle'), status: gf('showStatus'), avatars: gf('showAvatars'), anim: gf('anim'),
+  sum: gf('showSum'), count: gf('showCount'), totalSum: gf('showTotalSum'), totalCount: gf('showTotalCount') };
+const PONG_EVERY = 30 * 1000;
+const INITIAL_DONORS = gp('init', '').split('|').map(x => x.split('~')).filter(a => a[0] && +a[1] > 0).map(a => [a[0], +a[1], Math.max(1, Math.round(+a[2]) || 1)]);
+const SYNC_URL = "", SYNC_EVERY = 60 * 1000;
+const ZONE_OFFSET = new Date().getTimezoneOffset();
+const STORAGE_KEY = "donatty_top_donors" + (qs.get('ref') ? '_' + qs.get('ref').slice(0, 8) : '');
+const RESET_ID = gp('rs', '1');
+/* ============================================= */
+
+const API = "https://api.donatty.com";
+let ref = qs.get("ref"), token = qs.get("token");
+const CRED_KEY = "donatty_top_donors_creds";
+function parseLink(text){
+  try{
+    const u = new URL(String(text).trim());
+    const r = u.searchParams.get("ref"), t = u.searchParams.get("token");
+    return (r && t) ? { ref:r, token:t } : null;
+  }catch(e){ return null; }
+}
+if ((!ref || !token) && (ALERTS_URL || WIDGET_URL)){ const c = parseLink(ALERTS_URL || WIDGET_URL); if(c){ ref = ref || c.ref; token = token || c.token; } }
+if (!ref || !token){
+  try{ const c = JSON.parse(localStorage.getItem(CRED_KEY) || "null"); if(c){ ref = c.ref; token = c.token; } }catch(e){}
+}
+const DEBUG = qs.has("debug");
+
+let donors = {}, totalCount = 0, totalSum = 0, periodStart = Date.now(), seen = [];
+const $ = id => document.getElementById(id);
+const dotEl = $('dot'), statusEl = $('status'), listEl = $('list');
+$('curLabel').textContent = CURRENCY;
+
+function setStatus(t, live){ statusEl.textContent = t; dotEl.classList.toggle('live', !!live); }
+function esc(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function fmt(n){ return (Math.round(n*100)/100).toLocaleString('ru-RU'); }
+
+/* ---------- хранение ---------- */
+function save(){ if(DEMO) return; try{ localStorage.setItem(STORAGE_KEY, JSON.stringify({donors,totalCount,totalSum,periodStart,seen:seen.slice(-200)})); }catch(e){} }
+function load(){
+  try{
+    const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    if(!p) return;
+    if(PERIOD_MS && Date.now() - (p.periodStart||0) >= PERIOD_MS) return;
+    donors = p.donors||{}; totalCount = p.totalCount||0; totalSum = p.totalSum||0; periodStart = p.periodStart||Date.now(); seen = p.seen||[];
+  }catch(e){}
+}
+function reset(){ donors = {}; totalCount = 0; totalSum = 0; periodStart = Date.now(); seen = []; save(); render(); }
+setInterval(() => { if(PERIOD_MS && Date.now() - periodStart >= PERIOD_MS) reset(); }, 30000);
+
+/* ---------- разбор события ---------- */
+// Реальный формат события Donatty (по открытой интеграции для Streamer.bot):
+// {"action":"...","data":{"subscriber":"ник","amount":100,"currency":"RUB","message":"..."},"error":null}
+// Пинги приходят как {"action":"PING"}.
+function parseEvent(json){
+  if(!json || json.error) return null;
+  if(String(json.action || '').toUpperCase() === 'PING') return { ping:true };
+  const d = json.data;
+  if(!d || typeof d !== 'object') return null;
+  const amount = parseFloat(d.amount);
+  if(!(amount > 0)) return null;
+  const name = String(d.subscriber || d.username || d.nickname || d.name || '').trim();
+  return { name, amount, id: d.id || json.id || null };
+}
+
+function addDonation(d){
+  if(!(d.amount > 0)) return;
+  if(d.id){ if(seen.includes(d.id)) return; seen.push(d.id); }
+  const name = d.name || 'Аноним';
+  const key = name.toLowerCase();
+  if(!donors[key]) donors[key] = { name, sum: 0, count: 0 };
+  donors[key].name = name;
+  donors[key].sum += d.amount;
+  donors[key].count += 1;
+  totalSum += d.amount; totalCount += 1;
+  save(); render();
+}
+
+/* ---------- отрисовка ---------- */
+let COLORS = ['#22c55e','#10b981','#14b8a6','#65a30d','#059669','#16a34a'];
+function colorFor(s){ let h = 0; for(const c of s) h = c.charCodeAt(0) + ((h<<5)-h); return COLORS[Math.abs(h) % COLORS.length]; }
+const BILL = `<svg viewBox="0 0 24 16" width="1.7em" height="1.13em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><rect x="1.5" y="1.5" width="21" height="13" rx="2.5" style="fill:rgba(var(--rank1-rgb),.22)"/><circle cx="12" cy="8" r="3.2"/><path d="M5 5v.01M19 11v.01"/></svg>`;
+const COINS = `<div class="coins">${[[24,0,12,3.6],[38,1.1,15,4.2],[52,2.3,11,3.4],[64,.6,14,4.0],[76,1.8,12,3.8],[88,2.9,10,3.5],[46,3.2,13,4.4]].map(([l,d,f,t]) => `<i style="left:${l}%;font-size:${f}px;animation-delay:${d}s;animation-duration:${t}s">${BILL}</i>`).join('')}</div>`;
+const CROWN = `<svg width="24" height="16" viewBox="0 0 24 16" fill="none" style="stroke:var(--rank1)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="1.5" y="1.5" width="21" height="13" rx="2.5" style="fill:rgba(var(--rank1-rgb),.18)"/>
+  <circle cx="12" cy="8" r="3.2"/>
+  <path d="M5 5v.01M19 11v.01"/>
+</svg>`;
+
+function render(){
+  const top = Object.values(donors).sort((a,b) => b.sum - a.sum).slice(0,TOP_N);
+  $('totalCount').textContent = totalCount;
+  $('totalSum').textContent = fmt(totalSum);
+  if(!top.length){ listEl.innerHTML = '<div class="empty">Ждём первый донат...</div>'; return; }
+  const max = top[0].sum || 1;
+  listEl.innerHTML = top.map((e,i) => {
+    const pct = Math.max(8, Math.round(e.sum / max * 100));
+    const init = esc((e.name.trim().charAt(0) || '?').toUpperCase());
+    return `<div class="row rank${i+1}">
+      <div class="node">${i+1}</div>
+      <div class="avatar-wrap">${i===0 ? `<div class="crown">${CROWN}</div>` : ''}<div class="avatar" style="background:${colorFor(e.name)}">${init}</div></div>
+      <div class="textbox">
+        <div class="info"><div class="name">${esc(e.name)}</div>${SHOW.count ? `<div class="msglabel">донатов: ${e.count}</div>` : ''}</div>
+        ${SHOW.sum ? `<div class="count">${fmt(e.sum)} ${CURRENCY}</div>` : ''}
+      </div>
+      <div class="bar" style="width:${pct}%"></div>
+      ${i===0 ? COINS : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ---------- Donatty: токен → SSE ---------- */
+let accessToken = null, abortCtl = null, pongTimer = null, retry = 1000, lastData = Date.now();
+// Сторожок: если от Donatty 5 минут ничего (даже PING) — переподключаемся
+setInterval(() => { if(abortCtl && Date.now() - lastData > 5*60*1000){ lastData = Date.now(); try{ abortCtl.abort(); }catch(e){} } }, 30000);
+
+async function getAccessToken(){
+  const r = await fetch(`${API}/auth/tokens/${encodeURIComponent(token)}`);
+  if(!r.ok) throw new Error('token ' + r.status);
+  const j = await r.json();
+  return j.response.accessToken;
+}
+
+function pong(){
+  if(!accessToken) return;
+  fetch(`${API}/widgets/${encodeURIComponent(ref)}/pong`, { method:'POST', headers:{ Authorization:'Bearer ' + accessToken } })
+    .then(r => { if(DEBUG) console.log('pong', r.status); }).catch(()=>{});
+}
+
+async function connect(){
+  if(!ref || !token){ showSetup(); return; }
+  setStatus('подключение...', false);
+  clearInterval(pongTimer);
+  try{
+    accessToken = await getAccessToken();
+    abortCtl = new AbortController();
+    const url = `${API}/widgets/${encodeURIComponent(ref)}/sse?jwt=${encodeURIComponent(accessToken)}&zoneOffset=${ZONE_OFFSET}`;
+    const res = await fetch(url, { headers:{ Accept:'text/event-stream' }, signal: abortCtl.signal });
+    if(!res.ok || !res.body) throw new Error('sse ' + res.status);
+    lastData = Date.now();
+    setStatus('в эфире — донаты', true);
+    retry = 1000;
+    pong();
+    pongTimer = setInterval(pong, PONG_EVERY);
+
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    while(true){
+      const { value, done } = await reader.read();
+      if(done) break;
+      lastData = Date.now();
+      buf += dec.decode(value, { stream:true }).replace(/\r\n/g, '\n');
+      let idx;
+      while((idx = buf.indexOf('\n\n')) > -1){
+        handleBlock(buf.slice(0, idx));
+        buf = buf.slice(idx + 2);
+      }
+    }
+    throw new Error('closed');
+  }catch(err){
+    if(DEBUG) console.warn(err);
+    clearInterval(pongTimer);
+    const why = /Failed to fetch|NetworkError|Load failed/i.test(err.message) ? 'нет сети или доступ закрыт (CORS)' : err.message;
+    setStatus('переподключение… ' + String(why).slice(0, 44), false);
+    setTimeout(connect, retry);
+    retry = Math.min(retry * 1.6, 15000);
+  }
+}
+
+function handleBlock(block){
+  const data = [];
+  for(const line of block.split('\n')){
+    if(line.startsWith('data:')) data.push(line.slice(5).trim());
+  }
+  const raw = data.join('\n');
+  if(DEBUG) console.log('SSE', raw);
+  if(!raw) return;
+  let json; try{ json = JSON.parse(raw); }catch(e){ return; }
+  const ev = parseEvent(json);
+  if(!ev) return;
+  if(ev.ping){ pong(); return; }
+  addDonation(ev);
+}
+
+/* ---------- автосинхронизация топа ---------- */
+let syncUrl = SYNC_URL;
+const NAME_K = ['subscriber','nickname','username','name','donor','from'];
+const SUM_K  = ['amount','sum','total','value'];
+// Ищет в ответе массив объектов «имя + сумма»
+function extractList(j, depth = 0){
+  if(!j || typeof j !== 'object' || depth > 4) return null;
+  if(Array.isArray(j)){
+    const out = [];
+    for(const it of j){
+      if(!it || typeof it !== 'object') continue;
+      const nk = NAME_K.find(k => typeof it[k] === 'string');
+      const sk = SUM_K.find(k => it[k] != null && typeof it[k] !== 'object' && !isNaN(parseFloat(it[k])));
+      if(nk && sk) out.push({ name: it[nk].trim() || 'Аноним', sum: parseFloat(it[sk]), count: +(it.count || it.donations || 1) });
+    }
+    if(out.length) return out;
+  }
+  for(const k of Object.keys(j)){ const r = extractList(j[k], depth + 1); if(r) return r; }
+  return null;
+}
+function applyServerTop(list){
+  donors = {}; totalSum = 0;
+  for(const it of list){
+    const key = it.name.toLowerCase();
+    donors[key] = donors[key] || { name: it.name, sum: 0, count: 0 };
+    donors[key].sum += it.sum; donors[key].count += it.count || 1;
+    totalSum += it.sum;
+  }
+  totalCount = Math.max(totalCount, Object.values(donors).reduce((a, d) => a + d.count, 0));
+  save(); render();
+}
+async function fetchList(url){
+  const headers = accessToken ? { Authorization: 'Bearer ' + accessToken } : {};
+  const r = await fetch(url, { headers });
+  if(DEBUG || qs.has('probe')) console.log('sync', r.status, url);
+  if(!r.ok) return null;
+  const txt = await r.text();
+  if(DEBUG || qs.has('probe')) console.log(txt.slice(0, 400));
+  try{ return extractList(JSON.parse(txt)); }catch(e){ return null; }
+}
+async function syncOnce(){
+  if(!syncUrl || !ref || !token) return;
+  try{
+    const list = await fetchList(syncUrl.replace('{ref}', encodeURIComponent(ref)).replace('{token}', encodeURIComponent(token)));
+    if(list && list.length) applyServerTop(list);
+  }catch(e){ if(DEBUG) console.warn('sync', e); }
+}
+// Режим ?probe: перебор вероятных адресов (это предположения, не документация)
+async function probe(){
+  await new Promise(r => setTimeout(r, 2500)); // дождаться accessToken
+  const R = encodeURIComponent(ref), T = encodeURIComponent(token);
+  const cands = [
+    `${API}/widgets/${R}/top`, `${API}/widgets/${R}/top?token=${T}`, `${API}/widgets/top/${T}`,
+    `${API}/widgets/${R}/donators`, `${API}/widgets/${R}/leaderboard`, `${API}/widgets/${R}/stats/top`,
+    `${API}/widgets/top?ref=${R}&token=${T}`, `${API}/widgets/stats/top/${T}`
+  ];
+  for(const u of cands){
+    try{
+      const list = await fetchList(u);
+      if(list && list.length){
+        console.log('%cНАЙДЕНО — впиши в SYNC_URL:', 'color:#0f0', u.replace(R, '{ref}').replace(T, '{token}'), list);
+        syncUrl = u.replace(R, '{ref}').replace(T, '{token}');
+        syncOnce(); return;
+      }
+    }catch(e){ console.log('probe error', u, e.message); }
+  }
+  console.log('Ни один из адресов не подошёл — пришли Script.js виджета «Топ».');
+}
+function startSync(){
+  if(qs.has('probe')) probe();
+  setTimeout(syncOnce, 3000);
+  setInterval(syncOnce, SYNC_EVERY);
+}
+
+/* ---------- первая настройка: вставить ссылку на виджет ---------- */
+function showSetup(){
+  setStatus('нужна ссылка на виджет Donatty', false);
+  listEl.innerHTML = `<div id="setup">
+    <label>Вставь ссылку на виджет оповещений Donatty<br>(widgets.donatty.com/donations/?ref=…&token=…)</label>
+    <input id="linkInput" type="text" placeholder="https://widgets.donatty.com/donations/?ref=...&token=..." autocomplete="off">
+    <div class="err" id="linkErr"></div>
+    <button id="linkBtn">Подключить</button>
+  </div>`;
+  const submit = () => {
+    const c = parseLink($('linkInput').value);
+    if(!c){ $('linkErr').textContent = 'В ссылке не нашёл ref и token'; return; }
+    try{ localStorage.setItem(CRED_KEY, JSON.stringify(c)); }catch(e){}
+    ref = c.ref; token = c.token;
+    render(); connect();
+  };
+  $('linkBtn').onclick = submit;
+  $('linkInput').addEventListener('keydown', e => { if(e.key === 'Enter') submit(); });
+}
+
+/* ---------- тема и параметры ---------- */
+function hsl2rgb(h, s, l){ s /= 100; l /= 100; const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l),
+  f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))); return [f(0), f(8), f(4)].map(x => Math.round(x * 255)); }
+function hex2hsl(hex){
+  hex = String(hex).replace('#', ''); if(!/^[0-9a-f]{6}$/i.test(hex)) hex = '22c55e';
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let h = 0, s = 0;
+  if(d){ s = d / (1 - Math.abs(2 * l - 1)); h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4; h *= 60; }
+  return { h, s: s * 100, rgb: [r, g, b].map(x => Math.round(x * 255)) };
+}
+function applyTheme(hex){
+  const { h, s, rgb } = hex2hsl(hex), S = s < 8 ? s : 100, root = document.documentElement.style, set = (k, v) => root.setProperty(k, v);
+  const R = (ss, ll) => hsl2rgb(h, ss, ll).join(',');
+  set('--h', Math.round(h)); set('--violet-rgb', rgb.join(','));
+  set('--violet-soft', `hsl(${h},${S}%,86%)`);
+  set('--rank1', `hsl(${h},${S}%,71%)`);        set('--rank1-rgb', R(S, 71));
+  set('--rank2', `hsl(${h},${S*.45}%,72%)`);    set('--rank2-rgb', R(S * .45, 72));
+  set('--rank3', `hsl(${h},${S*.6}%,55%)`);     set('--rank3-rgb', R(S * .6, 55));
+  set('--ink-dim', `hsl(${h},${Math.min(S, 28)}%,64%)`);
+  set('--glass-top', `hsla(${h},${Math.min(S, 52)}%,8%,.96)`); set('--glass-bottom', `hsla(${h},${Math.min(S, 60)}%,4%,.94)`);
+  set('--void', `hsl(${h},${Math.min(S, 60)}%,4%)`);
+  COLORS = [0, 14, -14, 28, -28, 42].map(o => `hsl(${(h + o + 360) % 360},65%,40%)`);
+}
+function applyOptions(){
+  applyTheme('#' + gp('color', '22c55e').replace('#', ''));
+  document.documentElement.style.setProperty('--w', Math.max(280, Math.min(900, gn('width', 452))) + 'px');
+  $('title').classList.toggle('hide', !SHOW.title);
+  $('statuschip').classList.toggle('hide', !SHOW.status);
+  $('statCount').classList.toggle('hide', !SHOW.totalCount);
+  $('statSum').classList.toggle('hide', !SHOW.totalSum);
+  $('footer').classList.toggle('hide', !SHOW.totalCount && !SHOW.totalSum);
+  document.body.classList.toggle('noanim', !SHOW.anim);
+  document.body.classList.toggle('noav', !SHOW.avatars);
+  $('title').querySelector('.titletext').textContent = TITLE;
+}
+
+/* ---------- запуск ---------- */
+if(WIDGET_MODE){
+  applyOptions();
+  if(DEMO){
+    (INITIAL_DONORS.length ? INITIAL_DONORS : [["Fox_Rider",1500,5],["Пупс",800,3],["lsdss",544,2],["Maya",300,2],["Ghost",200,1],["Nik",150,1],["Zed",120,1],["Luna",100,2],["Bob",75,1],["Kira",50,1]])
+      .forEach(([name, sum, count]) => { donors[name.toLowerCase()] = { name, sum, count }; totalSum += sum; totalCount += count; });
+    if(qs.has('ts')) totalSum = gn('ts', totalSum);
+    if(qs.has('tc')) totalCount = gn('tc', totalCount);
+    render(); setStatus('предпросмотр', true);
+  }else{
+    load();
+    try{
+      const SEED_KEY = STORAGE_KEY + "_seed", sig = RESET_ID + JSON.stringify(INITIAL_DONORS) + gp('ts', '') + '|' + gp('tc', '');
+      if(localStorage.getItem(SEED_KEY) !== sig){
+        donors = {}; totalSum = 0; totalCount = 0; periodStart = Date.now(); seen = [];
+        for(const [n, sum, cnt] of INITIAL_DONORS){
+          const name = String(n || 'Аноним'), key = name.toLowerCase();
+          donors[key] = donors[key] || { name, sum: 0, count: 0 };
+          donors[key].sum += +sum; donors[key].count += cnt; totalSum += +sum; totalCount += cnt;
+        }
+        if(qs.has('ts')) totalSum = gn('ts', totalSum);
+        if(qs.has('tc')) totalCount = gn('tc', totalCount);
+        localStorage.setItem(SEED_KEY, sig); save();
+      }
+    }catch(e){}
+    render(); connect(); startSync();
+  }
+  if(parent !== window){   // сообщаем конфигуратору реальный размер виджета
+    const w = $('wrap'), post = () => parent.postMessage({ dtw: 1, w: Math.ceil(w.offsetWidth), h: Math.ceil(w.offsetHeight) }, '*');
+    new ResizeObserver(post).observe(w); post();
+  }
+}
+
+// Горячие клавиши (OBS: ПКМ по источнику → Interact)
+document.addEventListener('keydown', e => {
+  if(e.target.tagName === 'INPUT') return;
+  if(e.key === 'L' && e.shiftKey){ try{ localStorage.removeItem(CRED_KEY); }catch(_){} if(abortCtl) abortCtl.abort(); ref = token = null; showSetup(); }
+  if(e.key === 'R' && e.shiftKey) reset();                                                                                                  // сброс топа
+});
+</script>
+
+<script>
+/* ---------- конфигуратор (открывается, когда в адресе нет ref и token) ---------- */
+(function(){
+  if(WIDGET_MODE) return;
+  document.documentElement.classList.add('cfgmode');
+  const D = { title:'Топ донатеров', top:'3', cur:'₽', width:'452', color:'#22c55e', period:'all',
+    showTitle:true, showStatus:true, showAvatars:true, showSum:true, showCount:true, showTotalSum:true, showTotalCount:true, anim:true, init:'lsdss~544~1|Пупс~300~1|FilthyChild~200~1', ts:'', tc:'' };
+  const els = [...document.querySelectorAll('#cfg [data-k]')], $c = id => document.getElementById(id);
+  const base = location.href.split('#')[0].split('?')[0];
+  let rs = '', timer;
+  const read = () => { const o = {}; els.forEach(e => o[e.dataset.k] = e.type === 'checkbox' ? e.checked : e.value); return o; };
+  const write = o => { els.forEach(e => { const v = o[e.dataset.k]; if(v == null) return; if(e.type === 'checkbox') e.checked = !!v; else e.value = v; }); loadRows(o.init); };
+  const rowsEl = $c('rows'), initEl = document.querySelector('[data-k=init]');
+  let rows = [];
+  const ser = () => rows.filter(r => r.n.trim() && +r.s > 0).map(r => r.n.replace(/[|~]/g, '').trim() + '~' + (+r.s) + '~' + Math.max(1, Math.round(+r.c) || 1)).join('|');
+  function sync(){ initEl.value = ser(); update(); }
+  function drawRows(){
+    rowsEl.innerHTML = '';
+    rows.forEach((r, i) => {
+      const d = document.createElement('div'); d.className = 'dr';
+      d.innerHTML = '<input type="text" placeholder="Ник" aria-label="Ник"><input type="number" min="0" step="any" placeholder="Сумма" aria-label="Сумма"><input type="number" min="1" placeholder="1" aria-label="Донатов"><button type="button" aria-label="Удалить">×</button>';
+      const [n, sm, c, x] = d.children; n.value = r.n; sm.value = r.s; c.value = r.c;
+      n.oninput = () => { r.n = n.value; sync(); }; sm.oninput = () => { r.s = sm.value; sync(); }; c.oninput = () => { r.c = c.value; sync(); };
+      x.onclick = () => { rows.splice(i, 1); drawRows(); sync(); };
+      rowsEl.appendChild(d);
+    });
+  }
+  function loadRows(v){ rows = String(v || '').split('|').map(x => x.split('~')).filter(a => a[0]).map(a => ({ n: a[0], s: a[1] || '', c: a[2] || '1' })); drawRows(); }
+  $c('addRow').onclick = () => { rows.push({ n: '', s: '', c: '1' }); drawRows(); rowsEl.lastChild.firstChild.focus(); };
+  function parseInit(t){
+    return t.split('\n').map(l => l.trim().match(/^(.+?)[\s;:,=|~\-—–]+(\d+(?:[.,]\d+)?)\D*$/)).filter(Boolean)
+      .map(m => m[1].replace(/[|~]/g, '').trim() + '~' + parseFloat(m[2].replace(',', '.'))).join('|');
+  }
+  function params(o, forLink){
+    const p = new URLSearchParams(); p.set(forLink ? 'widget' : 'demo', '1');
+    for(const k in D){
+      if(k === 'link' || k === 'init') continue;
+      if(typeof D[k] === 'boolean'){ if(o[k] !== D[k]) p.set(k, o[k] ? '1' : '0'); }
+      else if(String(o[k]) !== String(D[k])) p.set(k, k === 'color' ? String(o[k]).replace('#', '') : o[k]);
+    }
+    const i = o.init; if(i) p.set('init', i);
+    if(forLink && rs) p.set('rs', rs);
+    return p;
+  }
+  function update(){
+    const o = read();
+    $c('wv').textContent = o.width;
+    $c('out').value = base + '?' + params(o, true);
+    try{ localStorage.setItem('dtw_cfg4', JSON.stringify({ o, rs })); }catch(e){}
+    clearTimeout(timer);
+    timer = setTimeout(() => { $c('frame').src = base + '?' + params(o, false); }, 250);
+  }
+  els.forEach(e => e.addEventListener('input', () => update(e.dataset.k === 'link')));
+  [['#22c55e'],['#a855f7'],['#ec4899'],['#3b82f6'],['#f59e0b'],['#ef4444']].forEach(([c]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.style.background = c; b.setAttribute('aria-label', 'Цвет ' + c);
+    b.onclick = () => { document.querySelector('[data-k=color]').value = c; update(); }; $c('swatches').appendChild(b);
+  });
+  $c('copy').onclick = () => {
+    const out = $c('out'); if(!out.value) return;
+    (navigator.clipboard ? navigator.clipboard.writeText(out.value) : Promise.reject()).catch(() => { out.select(); document.execCommand('copy'); });
+    const b = $c('copy'); b.textContent = 'Скопировано'; setTimeout(() => b.textContent = 'Копировать ссылку', 1600);
+  };
+  $c('resetTop').onclick = () => { rs = Date.now().toString(36); update(); };
+  window.addEventListener('message', e => {
+    const f = $c('frame'); if(e.source !== f.contentWindow || !e.data || !e.data.dtw) return;
+    f.style.width = e.data.w + 'px'; f.style.height = e.data.h + 'px'; $c('size').textContent = e.data.w + '×' + e.data.h;
+  });
+  try{ const st = JSON.parse(localStorage.getItem('dtw_cfg4') || 'null'); if(st){ rs = st.rs || ''; write({ ...D, ...st.o }); } else write(D); }catch(e){ write(D); }
+  update();
+})();
+</script>
+</body>
+</html>
